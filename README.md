@@ -3,7 +3,9 @@
 Take a golang map and flatten it or unfatten a map with delimited key.
 
 This work inspired by the [nodejs flat package](https://github.com/hughsk/flat/)
-
+## Notice
+* 对源码做了修改，列表的索引从1开始。
+* 增加了对列表的unflatten。
 ## Method
 
 ### Flatten

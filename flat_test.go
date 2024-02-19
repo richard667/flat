@@ -94,8 +94,8 @@ func TestFlatten(t *testing.T) {
 			`{"hello":{"world":["one","two"]}}`,
 			nil,
 			map[string]interface{}{
-				"hello.world.0": "one",
-				"hello.world.1": "two",
+				"hello.world.1": "one",
+				"hello.world.2": "two",
 			},
 		},
 		// nested twice
@@ -200,6 +200,25 @@ func TestUnflatten(t *testing.T) {
 		options *Options
 		want    map[string]interface{}
 	}{
+		{
+			map[string]interface{}{
+				"a":   "b",
+				"c.d": "e",
+				"c.f": "g",
+				"z.1": 2,
+				"z.2": 1.4567,
+			},
+			nil,
+			//map[string]interface{}{"a":"b", "c": map[string]interface{}{"d":"e", "f":"g"}, "z":[2, 1.4567]},
+			map[string]interface{}{
+				"a": "b",
+				"c": map[string]interface{}{
+					"d": "e",
+					"f": "g",
+				},
+				"z": []interface{}{2, 1.4567},
+			},
+		},
 		{
 			map[string]interface{}{"hello": "world"},
 			nil,

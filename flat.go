@@ -24,7 +24,10 @@ type Options struct {
 func Flatten(nested map[string]interface{}, opts *Options) (m map[string]interface{}, err error) {
 	if opts == nil {
 		opts = &Options{
+			Prefix:    "",
+			Safe:      false,
 			Delimiter: ".",
+			MaxDepth:  0,
 		}
 	}
 
@@ -69,7 +72,7 @@ func flatten(prefix string, depth int, nested interface{}, opts *Options) (flatm
 			return
 		}
 		for i, v := range nested {
-			newKey := strconv.Itoa(i)
+			newKey := strconv.Itoa(i + 1)
 			if prefix != "" {
 				newKey = prefix + opts.Delimiter + newKey
 			}
@@ -102,7 +105,10 @@ func update(to map[string]interface{}, from map[string]interface{}) {
 func Unflatten(flat map[string]interface{}, opts *Options) (nested map[string]interface{}, err error) {
 	if opts == nil {
 		opts = &Options{
+			Prefix:    "",
+			Safe:      false,
 			Delimiter: ".",
+			MaxDepth:  0,
 		}
 	}
 	nested, err = unflatten(flat, opts)
@@ -114,7 +120,7 @@ func unflatten(flat map[string]interface{}, opts *Options) (nested map[string]in
 
 	for k, v := range flat {
 		temp := uf(k, v, opts).(map[string]interface{})
-		err = mergo.Merge(&nested, temp, func(c *mergo.Config) { c.Overwrite = true })
+		err = mergo.Merge(&nested, temp, func(c *mergo.Config) { c.Overwrite = true }, mergo.WithAppendSlice)
 		if err != nil {
 			return
 		}
@@ -130,11 +136,25 @@ func uf(k string, v interface{}, opts *Options) (n interface{}) {
 		k = strings.TrimPrefix(k, opts.Prefix+opts.Delimiter)
 	}
 	keys := strings.Split(k, opts.Delimiter)
-
-	for i := len(keys) - 1; i >= 0; i-- {
-		temp := make(map[string]interface{})
-		temp[keys[i]] = n
-		n = temp
+	for i := len(keys) - 1; i >= 0; i-- { // key可能是数字，也可能是string，当为数字时，我们认为这是一个被打平的数组，否则是一个map。（一般来说map不会用数字作为key。）
+		if _, err := strconv.Atoi(keys[i]); err == nil { // key为数字说明是一个数组
+			temp := make(map[string]interface{})
+			temp[keys[i-1]] = []interface{}{n}
+			i--
+			n = temp
+			//temp := make(map[string][]interface{})
+			//if num == 1 {
+			//	temp[keys[i-1]] = []interface{}{n}
+			//} else {
+			//	temp[keys[i-1]] = append(temp[keys[i-1]], n)
+			//}
+			//i--
+			//n = temp
+		} else { // 否则是个Map
+			temp := make(map[string]interface{})
+			temp[keys[i]] = n
+			n = temp
+		}
 	}
 
 	return
